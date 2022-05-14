@@ -1,0 +1,19 @@
+{
+    // created by vscode papyrus-lang papyrus.skyrimSpecialEdition.generateProject
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Fallout 4",
+            "type": "papyrus",
+            "request": "attach",
+            "game": "fallout4"
+        },
+        {
+            "name": "Fallout 4 Project",
+            "type": "papyrus",
+            "request": "attach",
+            "game": "fallout4",
+            "projectPath": "${workspaceRoot}\\Scripts\\Source\\User\\fallout4.ppj"
+        }
+    ]
+}

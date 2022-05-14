@@ -1,0 +1,37 @@
+{
+    "modName": "RMR_Rads",
+    "displayName": "RMR: Rads",
+    "minMcmVersion": 1,
+    "content": [
+        {
+            "text": "<font size='24'>RMR Trigger: Rads</font> <font id='version' size='10'>v0.0.2</font>",
+            "type": "text",
+            "html": true
+        },
+        {
+            "text": "General Settings",
+            "type": "section"
+        },
+        {
+            "text": "Trigger names",
+            "help": "Name / keyword that will be sent to RMR to identify the trigger. Default: Rads",
+            "type": "textinput",
+            "id": "sTriggerName:General",
+            "valueOptions": {
+                "sourceType": "ModSettingString"
+            }
+        },
+        {
+            "text": "Update delay",
+            "help": "Seconds to wait between checking for rads. Default: 10s",
+            "type": "slider",
+            "id": "fUpdateDelay:General",
+            "valueOptions": {
+                "sourceType": "ModSettingFloat",
+                "min": 0.5,
+                "max": 60.0,
+                "step": 0.5
+            }
+        }
+    ]
+}
