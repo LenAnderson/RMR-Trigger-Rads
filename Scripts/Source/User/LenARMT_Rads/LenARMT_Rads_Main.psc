@@ -156,8 +156,11 @@ Function Startup()
 		TriggerName = MCM.GetModSettingString("RMR_Rads", "sTriggerName:General")
 		UpdateDelay = MCM.GetModSettingFloat("RMR_Rads", "fUpdateDelay:General")
 
-		;TODO check if RMR is running
-		IsRunning = true
+		; check whether RMR is running and start the timer
+		IsRunning = RMR.IsRunning()
+		If (IsRunning)
+			StartTimer(UpdateDelay, ETimerUpdateValue)
+		EndIf
 	EndIf
 EndFunction
 
