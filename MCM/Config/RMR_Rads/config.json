@@ -13,7 +13,7 @@
             "type": "section"
         },
         {
-            "text": "Trigger names",
+            "text": "Trigger name",
             "help": "Name / keyword that will be sent to RMR to identify the trigger. Default: Rads",
             "type": "textinput",
             "id": "sTriggerName:General",
