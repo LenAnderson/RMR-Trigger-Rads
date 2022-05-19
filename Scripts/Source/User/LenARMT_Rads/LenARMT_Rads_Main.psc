@@ -165,10 +165,8 @@ Function Startup()
 
 		; check whether RMR is running and start the timer
 		RmrIsRunning = RMR.IsRunning()
-		If (RmrIsRunning)
-			If (UpdateTriggerName())
-				UpdateValue(true)
-			EndIf
+		If (UpdateTriggerName())
+			UpdateValue(true)
 		EndIf
 	EndIf
 EndFunction
