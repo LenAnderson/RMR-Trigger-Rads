@@ -112,9 +112,7 @@ EndEvent
 
 Function OnMCMSettingChange(string modName, string id)
 	If (id == "sTriggerName:General")
-		If (UpdateTriggerName())
-			UpdateValue(true)
-		EndIf
+		UpdateTriggerName()
 	EndIf
 EndFunction
 
@@ -124,9 +122,6 @@ EndFunction
 
 Event LenARM:LenARM_API.OnStartup(LenARM:LenARM_API akSender, Var[] akArgs)
 	RmrIsRunning = true
-	If (UpdateTriggerName())
-		UpdateValue(true)
-	EndIf
 EndEvent
 
 Event LenARM:LenARM_API.OnShutdown(LenARM:LenARM_API akSender, Var[] akArgs)
@@ -165,9 +160,7 @@ Function Startup()
 
 		; check whether RMR is running and start the timer
 		RmrIsRunning = RMR.IsRunning()
-		If (UpdateTriggerName())
-			UpdateValue(true)
-		EndIf
+		UpdateTriggerName()
 	EndIf
 EndFunction
 
@@ -245,6 +238,8 @@ bool Function UpdateTriggerName()
 		IsRegistered = RMR.RegisterTrigger(TriggerName)
 		If (!IsRegistered)
 			Debug.MessageBox("RMR: Rads - The trigger name \"" + TriggerName + "\" is already in use. Please change the name in the MCM for this mod.")
+		Else
+			UpdateValue(true)
 		EndIf
 		return IsRegistered
 	Else
