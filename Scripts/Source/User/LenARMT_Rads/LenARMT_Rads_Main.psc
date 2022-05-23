@@ -130,6 +130,10 @@ Event LenARM:LenARM_API.OnShutdown(LenARM:LenARM_API akSender, Var[] akArgs)
 	CancelTimer(ETimerUpdateValue)
 EndEvent
 
+Event LenARM:LenARM_API.OnRequestTriggers(LenARM:LenARM_API akSender, Var[] akArgs)
+	UpdateTriggerName()
+EndEvent
+
 
 
 
@@ -153,6 +157,7 @@ Function Startup()
 		; listen to RMR events (startup and shutdown)
 		RegisterForCustomEvent(RMR, "OnStartup")
 		RegisterForCustomEvent(RMR, "OnShutdown")
+		RegisterForCustomEvent(RMR, "OnRequestTriggers")
 
 		; load MCM values
 		TriggerName = MCM.GetModSettingString("RMR_Rads", "sTriggerName:General")
@@ -175,6 +180,7 @@ Function Shutdown()
 	If (RMR)
 		UnregisterForCustomEvent(RMR, "OnStartup")
 		UnregisterForCustomEvent(RMR, "OnShutdown")
+		UnregisterForCustomEvent(RMR, "OnRequestTriggers")
 		RMR.UnregisterTrigger(TriggerName)
 		RMR = None
 	EndIf
