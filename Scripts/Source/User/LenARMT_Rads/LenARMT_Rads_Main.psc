@@ -216,10 +216,8 @@ EndFunction
 ;
 Function UpdateValue(bool forced=false)
 	If (RmrIsRunning && IsRegistered)
-		Debug.Trace("[RMR_Rads] " + "UpdateValue")
 		float newValue = Player.GetValue(Rads) / 1000.0
 		If (forced || newValue != CurrentValue)
-			Debug.Trace("[RMR_Rads] " + "  " + CurrentValue + "  -->  " + newValue)
 			CurrentValue = newValue
 			RMR.UpdateTrigger(TriggerName, CurrentValue)
 		EndIf
