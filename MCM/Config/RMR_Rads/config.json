@@ -4,7 +4,7 @@
     "minMcmVersion": 1,
     "content": [
         {
-            "text": "<font size='24'>RMR Trigger: Rads</font> <font id='version' size='10'>v0.0.2</font>",
+            "text": "<font size='24'>RMR Trigger: Rads</font> <font id='version' size='10'>v1.0.0</font>",
             "type": "text",
             "html": true
         },

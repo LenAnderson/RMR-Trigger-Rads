@@ -38,11 +38,14 @@ float UpdateDelay
 ; current rads
 float CurrentValue
 
-; whether the mod is currently running
-bool IsRunning = false
+; whether RMR is currently running
+bool RmrIsRunning = false
 
 ; whether the mod is currently shutting down
 bool IsShuttingDown = false
+
+; whether the trigger has been successfully registered with RMR
+bool IsRegistered = false
 
 
 ;-----------------------------------------------------------------------------------------------------
@@ -61,7 +64,7 @@ EndFunction
 ; Get the current version of this mod.
 ;
 string Function GetVersion()
-	return "0.0.1"; Sat May 14 17:50:38 CEST 2022
+	return "1.0.0"; Mon Nov 14 09:05:28 CET 2022
 EndFunction
 
 
@@ -77,14 +80,12 @@ EndFunction
 ; game events
 
 Event OnQuestInit()
-	; D.Log("OnQuestInit")
 	RegisterForExternalEvent("OnMCMSettingChange|RMR_Rads", "OnMCMSettingChange")
 	RegisterForRemoteEvent(Player, "OnPlayerLoadGame")
 	Startup()
 EndEvent
 
 Event OnQuestShutdown()
-	; D.Log("OnQuestShutdown")
 	UnregisterForExternalEvent("OnMCMSettingChange|RMR_Rads")
 	UnregisterForRemoteEvent(Player, "OnPlayerLoadGame")
 	Shutdown()
@@ -93,7 +94,7 @@ EndEvent
 
 Event Actor.OnPlayerLoadGame(Actor akSender)
 	PerformUpdateIfNecessary()
-	If (!IsRunning)
+	If (!RMR)
 		Startup()
 	EndIf
 EndEvent
@@ -110,7 +111,9 @@ EndEvent
 ; MCM events
 
 Function OnMCMSettingChange(string modName, string id)
-	; D.Log("OnMCMSettingChange: " + modName + "; " + id)
+	If (id == "sTriggerName:General")
+		UpdateTriggerName()
+	EndIf
 EndFunction
 
 
@@ -118,15 +121,17 @@ EndFunction
 ; RMR events
 
 Event LenARM:LenARM_API.OnStartup(LenARM:LenARM_API akSender, Var[] akArgs)
-	RMR.RegisterTrigger(TriggerName)
-	RMR.UpdateTrigger(TriggerName, CurrentValue)
-	IsRunning = true
-	StartTimer(UpdateDelay, ETimerUpdateValue)
+	RmrIsRunning = true
 EndEvent
 
 Event LenARM:LenARM_API.OnShutdown(LenARM:LenARM_API akSender, Var[] akArgs)
-	IsRunning = false
+	RmrIsRunning = false
+	IsRegistered = false
 	CancelTimer(ETimerUpdateValue)
+EndEvent
+
+Event LenARM:LenARM_API.OnRequestTriggers(LenARM:LenARM_API akSender, Var[] akArgs)
+	UpdateTriggerName()
 EndEvent
 
 
@@ -141,22 +146,26 @@ EndEvent
 ; Start the mod.
 ;
 Function Startup()
-	RMR = Game.GetFormFromFile(0xF99, "LenA_RadMorphing.esp") as LenARM:LenARM_API
+	; try to get reference to RMR API
+	RMR = Game.GetFormFromFile(0x4C50, "LenA_RadMorphing.esp") as LenARM:LenARM_API
 	If (!RMR)
-		Debug.Notification("RMR API was not found")
+		Debug.Notification("[RMR_Rads] " + "RMR API was not found")
+		Debug.Trace("[RMR_Rads] " + "RMR API was not found")
 	Else
-		Debug.Trace("RMR API was found.")
+		Debug.Trace("[RMR_Rads] " + "RMR API was found.")
 
 		; listen to RMR events (startup and shutdown)
 		RegisterForCustomEvent(RMR, "OnStartup")
 		RegisterForCustomEvent(RMR, "OnShutdown")
+		RegisterForCustomEvent(RMR, "OnRequestTriggers")
 
 		; load MCM values
 		TriggerName = MCM.GetModSettingString("RMR_Rads", "sTriggerName:General")
 		UpdateDelay = MCM.GetModSettingFloat("RMR_Rads", "fUpdateDelay:General")
 
-		;TODO check if RMR is running
-		IsRunning = true
+		; check whether RMR is running and start the timer
+		RmrIsRunning = RMR.IsRunning()
+		UpdateTriggerName()
 	EndIf
 EndFunction
 
@@ -166,11 +175,13 @@ EndFunction
 ;
 Function Shutdown()
 	IsShuttingDown = true
-	IsRunning = false
+	IsRegistered = false
 	CancelTimer(ETimerUpdateValue)
 	If (RMR)
 		UnregisterForCustomEvent(RMR, "OnStartup")
 		UnregisterForCustomEvent(RMR, "OnShutdown")
+		UnregisterForCustomEvent(RMR, "OnRequestTriggers")
+		RMR.UnregisterTrigger(TriggerName)
 		RMR = None
 	EndIf
 	IsShuttingDown = false
@@ -178,13 +189,13 @@ EndFunction
 
 
 ;
-; check if a new version has been installed and restart the mod if necessary
+; Check if a new version has been installed and restart the mod if necessary.
 ;
 Function PerformUpdateIfNecessary()
 	If (Version == "")
+		; mod has never run before
 		Version = GetVersion()
 	ElseIf (Version != GetVersion())
-		;TODO perform update
 		Shutdown()
 		Startup()
 		Version = GetVersion()
@@ -199,13 +210,43 @@ EndFunction
 ;-----------------------------------------------------------------------------------------------------
 ; mod logic
 
-Function UpdateValue()
-	float newValue = Player.GetValuePercentage(Rads)
-	If (newValue != CurrentValue)
-		CurrentValue = newValue
-		RMR.UpdateTrigger(TriggerName, CurrentValue)
+;
+; Update the current value (i.e. check player's rads) and restart the timer.
+; If @forced is true, RMR will be notified even if the value has not changed.
+;
+Function UpdateValue(bool forced=false)
+	If (RmrIsRunning && IsRegistered)
+		float newValue = Player.GetValue(Rads) / 1000.0
+		If (forced || newValue != CurrentValue)
+			CurrentValue = newValue
+			RMR.UpdateTrigger(TriggerName, CurrentValue)
+		EndIf
+		If (RmrIsRunning && !IsShuttingDown)
+			StartTimer(UpdateDelay, ETimerUpdateValue)
+		EndIf
 	EndIf
-	If (IsRunning && !IsShuttingDown)
-		StartTimer(UpdateDelay, ETimerUpdateValue)
+EndFunction
+
+
+;
+; Update the trigger name with the current value from MCM.
+; Unregister the old and register the new name with RMR.
+;
+bool Function UpdateTriggerName()
+	Debug.Trace("[RMR_Rads] " + "UpdateTriggerName")
+	If (RMR)
+		If (IsRegistered)
+			RMR.UnregisterTrigger(TriggerName)
+		EndIf
+		TriggerName = MCM.GetModSettingString("RMR_Rads", "sTriggerName:General")
+		IsRegistered = RMR.RegisterTrigger(TriggerName)
+		If (!IsRegistered)
+			Debug.MessageBox("RMR: Rads - The trigger name \"" + TriggerName + "\" is already in use. Please change the name in the MCM for this mod.")
+		Else
+			UpdateValue(true)
+		EndIf
+		return IsRegistered
+	Else
+		return false
 	EndIf
 EndFunction
